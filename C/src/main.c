@@ -126,6 +126,7 @@ void calculate_pagerank(double pagerank[])
     }
 
     printf("%zu iterations achieved in %.2f seconds\n", iteration, elapsed);
+    printf("->>>>>> %zu !! difference of number of iteration for base code of sneaky\n", iteration-145);
 }
 
 /**
@@ -186,7 +187,8 @@ int main(int argc, char* argv[])
     // Get the time at the very start.
     double start = omp_get_wtime();
 
-    generate_nice_graph();
+    // generate_nice_graph();
+    generate_sneaky_graph();
 
     /// The array in which each vertex pagerank is stored.
     double pagerank[GRAPH_ORDER];
