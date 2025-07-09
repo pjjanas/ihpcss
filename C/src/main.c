@@ -49,11 +49,7 @@ void calculate_pagerank(double pagerank[])
 {
     double initial_rank = 1.0 / GRAPH_ORDER;
 
-    // Initialise all vertices to 1/n.
-    for(int i = 0; i < GRAPH_ORDER; i++)
-    {
-        pagerank[i] = initial_rank;
-    }
+    // Initialise all vertices to 1/n. and create result array
 
     double damping_value = (1.0 - DAMPING_FACTOR) / GRAPH_ORDER;
     double diff = 1.0;
@@ -62,9 +58,11 @@ void calculate_pagerank(double pagerank[])
     double elapsed = omp_get_wtime() - start;
     double time_per_iteration = 0;
     double new_pagerank[GRAPH_ORDER];
+
     for(int i = 0; i < GRAPH_ORDER; i++)
     {
-        new_pagerank[i] = 0.0;
+        pagerank[i] = initial_rank;
+	new_pagerank[i] = 0.0;
     }
 
     // If we exceeded the MAX_TIME seconds, we stop. If we typically spend X seconds on an iteration, and we are less than X seconds away from MAX_TIME, we stop.
