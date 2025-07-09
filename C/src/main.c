@@ -73,10 +73,7 @@ void calculate_pagerank(double pagerank[])
         for(int i = 0; i < GRAPH_ORDER; i++)
         {
             new_pagerank[i] = 0.0;
-        }
-
-        for(int i = 0; i < GRAPH_ORDER; i++)
-        {
+        
             for(int j = 0; j < GRAPH_ORDER; j++)
             {
                 if (adjacency_matrix[j][i] == 1.0)
@@ -109,16 +106,14 @@ void calculate_pagerank(double pagerank[])
         total_diff += diff;
         min_diff = (min_diff > diff) ? diff : min_diff;
 
-        for(int i = 0; i < GRAPH_ORDER; i++)
+        double pagerank_total = 0.0;
+
+	for(int i = 0; i < GRAPH_ORDER; i++)
         {
             pagerank[i] = new_pagerank[i];
-        }
-
-        double pagerank_total = 0.0;
-        for(int i = 0; i < GRAPH_ORDER; i++)
-        {
             pagerank_total += pagerank[i];
         }
+
         if(fabs(pagerank_total - 1.0) >= 1E-12)
         {
             printf("[ERROR] Iteration %zu: sum of all pageranks is not 1 but %.12f.\n", iteration, pagerank_total);
