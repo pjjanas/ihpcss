@@ -30,13 +30,13 @@ double max_diff = 0.0;
 double min_diff = 1.0;
 double total_diff = 0.0;
 
-omp_set_num_threads(omp_get_max_threads); 
-
 void initialize_graph(void)
 {
-    for (int i = 0; i < GRAPH_ORDER; i++)
+    int i, j;
+#pragma omp parallel for default(none) shared(adjacency_matrix) collapse(2)
+    for (i = 0; i < GRAPH_ORDER; i++)
     {
-        for (int j = 0; j < GRAPH_ORDER; j++)
+        for (j = 0; j < GRAPH_ORDER; j++)
         {
             adjacency_matrix[i][j] = 0.0;
         }
@@ -61,61 +61,64 @@ void calculate_pagerank(double pagerank[])
     double time_per_iteration = 0;
     double new_pagerank[GRAPH_ORDER];
 
+    // #pragma omp parallel for
     for (int i = 0; i < GRAPH_ORDER; i++)
     {
         pagerank[i] = initial_rank;
         new_pagerank[i] = 0.0;
     }
 
+    int outdegree[GRAPH_ORDER];
+#pragma omp parallel for
+    for (int i = 0; i < GRAPH_ORDER; i++)
+    {
+        int count = 0;
+        for (int j = 0; j < GRAPH_ORDER; j++)
+        {
+            if (adjacency_matrix[i][j] == 1.0)
+            {
+                count++;
+            }
+        }
+        outdegree[i] = count;
+    }
+
     // If we exceeded the MAX_TIME seconds, we stop. If we typically spend X seconds on an iteration, and we are less than X seconds away from MAX_TIME, we stop.
     while (elapsed < MAX_TIME && (elapsed + time_per_iteration) < MAX_TIME)
     {
         double iteration_start = omp_get_wtime();
+        #pragma omp parallel for schedule(dynamic)
         for (int i = 0; i < GRAPH_ORDER; i++)
         {
-            new_pagerank[i] = 0.0; // removed abpve for-loop with this.
+            new_pagerank[i] = 0.0;
             for (int j = 0; j < GRAPH_ORDER; j++)
             {
                 if (adjacency_matrix[j][i] == 1.0)
                 {
-                    int outdegree = 0;
-
-                    for (int k = 0; k < GRAPH_ORDER; k++)
+                    int outd = outdegree[j];
+                    if (outd > 0)
                     {
-                        if (adjacency_matrix[j][k] == 1.0)
-                        {
-                            outdegree++;
-                        }
+                        new_pagerank[i] += pagerank[j] / (double)outd;
                     }
-                    new_pagerank[i] += pagerank[j] / (double)outdegree;
                 }
             }
         }
 
+        diff = 0.0;
+        double pagerank_total = 0.0;
+#pragma omp parallel for
         for (int i = 0; i < GRAPH_ORDER; i++)
         {
             new_pagerank[i] = DAMPING_FACTOR * new_pagerank[i] + damping_value;
+            diff += fabs(new_pagerank[i] - pagerank[i]);
+            pagerank[i] = new_pagerank[i];
+            pagerank_total += pagerank[i];
         }
 
-        diff = 0.0;
-        for (int i = 0; i < GRAPH_ORDER; i++)
-        {
-            diff += fabs(new_pagerank[i] - pagerank[i]);
-        }
         max_diff = (max_diff < diff) ? diff : max_diff;
         total_diff += diff;
         min_diff = (min_diff > diff) ? diff : min_diff;
 
-        for (int i = 0; i < GRAPH_ORDER; i++)
-        {
-            pagerank[i] = new_pagerank[i];
-        }
-
-        double pagerank_total = 0.0;
-        for (int i = 0; i < GRAPH_ORDER; i++)
-        {
-            pagerank_total += pagerank[i];
-        }
         if (fabs(pagerank_total - 1.0) >= 1E-12)
         {
             printf("[ERROR] Iteration %zu: sum of all pageranks is not 1 but %.12f.\n", iteration, pagerank_total);
@@ -128,7 +131,7 @@ void calculate_pagerank(double pagerank[])
     }
 
     printf("%zu iterations achieved in %.2f seconds\n", iteration, elapsed);
-    printf("->>>>>> %zu !! difference of number of iteration for base code of sneaky\n", iteration - 145);
+    //    printf("->>>>>> %zu !! difference of number of iteration for base code of sneaky\n", iteration - 145);
 }
 
 /**
@@ -139,6 +142,7 @@ void generate_nice_graph(void)
     printf("Generate a graph for testing purposes (i.e.: a nice and conveniently designed graph :) )\n");
     double start = omp_get_wtime();
     initialize_graph();
+#pragma omp parallel for collapse(2)
     for (int i = 0; i < GRAPH_ORDER; i++)
     {
         for (int j = 0; j < GRAPH_ORDER; j++)
